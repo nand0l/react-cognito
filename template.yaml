@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   template for creating the Cognito User Pool
 Transform:
-- AWS::Serverless-2016-10-31
+  - AWS::Serverless-2016-10-31
 
 Parameters:
   Env:
@@ -11,21 +11,20 @@ Parameters:
 
   S3BucketName:
     Type: String
-    Default: majestic-static-site
+    Default: aaiaii-static-site
   CognitoUserPoolName:
     Type: String
-    Default: majestic-userpool
+    Default: aaiaii-userpool
   CognitoWebClientName:
     Type: String
-    Default: majestic-webclient
+    Default: aaiaii-webclient
 
 Resources:
-
   CloudFrontOriginAccessIdentity:
-    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: 'Origin Access Identity'
+        Comment: "Origin Access Identity"
 
   CloudfrontDistribution:
     Type: "AWS::CloudFront::Distribution"
@@ -39,10 +38,10 @@ Resources:
           - Id: s3-website
             DomainName: !GetAtt S3Bucket.DomainName
             S3OriginConfig:
-              OriginAccessIdentity: 
-                Fn::Sub: 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+              OriginAccessIdentity:
+                Fn::Sub: "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
         DefaultCacheBehavior:
-          Compress: 'true'
+          Compress: "true"
           AllowedMethods:
             - GET
             - HEAD
@@ -50,12 +49,12 @@ Resources:
           ForwardedValues:
             QueryString: false
           TargetOriginId: s3-website
-          ViewerProtocolPolicy : redirect-to-https
+          ViewerProtocolPolicy: redirect-to-https
 
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${Env}-${S3BucketName}"
+      BucketName: !Sub "${S3BucketName}-${Env}"
 
   S3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -63,18 +62,17 @@ Resources:
       Bucket: !Ref S3Bucket
       PolicyDocument:
         Statement:
-          -
-            Effect: Allow
-            Action: 's3:GetObject'
+          - Effect: Allow
+            Action: "s3:GetObject"
             Resource:
               - !Sub "arn:aws:s3:::${S3Bucket}/*"
             Principal:
               AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
-  
+
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: !Sub "${Env}-${CognitoUserPoolName}"
+      UserPoolName: !Sub "${CognitoUserPoolName}-${Env}"
       AliasAttributes:
         - email
       UsernameConfiguration:
@@ -111,9 +109,48 @@ Resources:
   WebCognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub "${Env}-${CognitoWebClientName}"
+      ClientName: !Sub "${CognitoWebClientName}-${Env}"
       UserPoolId: !Ref CognitoUserPool
       ExplicitAuthFlows:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
       PreventUserExistenceErrors: ENABLED
+Outputs:
+  Region:
+    Value: !Ref AWS::Region
+
+  UserPoolId:
+    Value: !Ref CognitoUserPool
+
+  UserPoolArn:
+    Value: !GetAtt CognitoUserPool.Arn
+
+  UserPoolAppClientId:
+    Value: !Ref WebCognitoUserPoolClient
+
+  UserPoolAppClientArn:
+    Value: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool-client/${WebCognitoUserPoolClient}"
+
+  S3BucketName:
+    Value: !Ref S3Bucket
+
+  S3BucketArn:
+    Value: !GetAtt S3Bucket.Arn
+
+  CloudfrontDistributionURL:
+    Value: !Sub "https://${CloudfrontDistribution.DomainName}"
+
+  CloudfrontDistributionArn:
+    Value: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudfrontDistribution}"
+
+  CloudFrontOriginAccessIdentityArn:
+    Value: !Sub "arn:aws:cloudfront::${AWS::AccountId}:originaccessidentity/${CloudFrontOriginAccessIdentity}"
+
+  awsExportsInput:
+    Description: aws-exports.js input. 
+    Value: !Sub |
+      {
+        "REGION" : "${AWS::Region}",
+        "USER_POOL_ID": "${CognitoUserPool}",
+        "USER_POOL_APP_CLIENT_ID": "${WebCognitoUserPoolClient}"
+      }

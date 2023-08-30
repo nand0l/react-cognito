@@ -1,5 +1,5 @@
 export const awsExports = {
-    "REGION" : "add_your_region_here",
-    "USER_POOL_ID": "add_your_user_pool_id_here",
-    "USER_POOL_APP_CLIENT_ID": "add_your_user_pool_app_client_id_here"
-}
+  REGION: "eu-west-1",
+  USER_POOL_ID: "eu-west-1_Z1ALyPhEp",
+  USER_POOL_APP_CLIENT_ID: "4s8o2fkie1jjtqg2b6aivu9dig",
+};
