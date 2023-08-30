@@ -15,10 +15,17 @@ Amplify.configure({
 
 function AuthenticatedApp() {
   const [jwtToken, setJwtToken] = useState('');
+  const [userAttributes, setUserAttributes] = useState({});
+  const textareaRef = React.useRef(null);
 
   useEffect(() => {
     fetchJwtToken();
+    fetchUserAttributes();
   }, []);
+
+  useEffect(() => {
+    adjustHeight();
+  }, [jwtToken]);
 
   const fetchJwtToken = async () => {
     try {
@@ -30,11 +37,42 @@ function AuthenticatedApp() {
     }
   };
 
+  const fetchUserAttributes = async () => {
+    try {
+      const user = await Auth.currentAuthenticatedUser();
+      setUserAttributes(user.attributes);
+    } catch (error) {
+      console.error("Error fetching user attributes:", error);
+    }
+  };
+
+  const adjustHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  };
+
   return (
-    <div>
+    <div className='container'>
       <button onClick={() => Auth.signOut()}>Sign out</button>
       <h4>Your JWT token:</h4>
-      <textarea readOnly value={jwtToken} style={{ width: '100%', minHeight: '100px' }}></textarea>
+      <textarea 
+        ref={textareaRef} 
+        className='tokenbay' 
+        readOnly 
+        value={jwtToken} 
+        style={{
+          overflow: 'hidden',
+          resize: 'none'
+        }}
+      ></textarea>
+
+      {/* Display user attributes */}
+      <div>
+        <h4>User Attributes:</h4>
+        <pre>{JSON.stringify(userAttributes, null, 2)}</pre>
+      </div>
     </div>
   );
 }
